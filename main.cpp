@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <locale>
+#include <ctime>
 
 using namespace std;
 
@@ -29,10 +30,39 @@ string read_last_line() {
 }
 
 void write_to_last_line(const string& line) {
-    ofstream outfile(filename, ios::app);
+    /*ofstream outfile(filename, ios::app);
     outfile.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
     outfile << line << '\n';
+    outfile.close();*/
+    time_t now = time(nullptr);
+    tm* t = localtime(&now);
+    ifstream infile(filename);
+    string tmp_filename = filename + ".tmp";
+    string tmp_line;
+    ofstream outfile(tmp_filename);
+    bool first_line = true;
+
+    // Read all lines from the file
+    while (getline(infile, tmp_line)) {
+        // Write all lines except the last one to the temporary file
+        if (!first_line) {
+            outfile << tmp_line << '\n';
+        }
+        first_line = false;
+    }
+
+    // Write the new last line to the temporary file
+
+    outfile.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
+    outfile <<"["<<t->tm_year + 1900 << "/" << t->tm_mon + 1<< "/" << t->tm_mday << " "<<t->tm_hour << ":" << t->tm_min << ":" << t->tm_sec <<"]"<< line << '\n';
+    // Close the input and output files
+    infile.close();
     outfile.close();
+
+    // Rename the temporary file to the original filename
+    if (rename(tmp_filename.c_str(), filename.c_str()) != 0) {
+        throw runtime_error("Failed to rename temporary file.");
+    }
 }
 
 void receiveMessages() {
