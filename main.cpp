@@ -13,7 +13,7 @@ using namespace std;
 string username = "-";
 string filename = "chat_history.txt";
 string empty_note = "There is no message now, send a message";
-string tmp_last_line = "cisvicdvskucv";
+string tmp_last_line = "this is the value of tmp_last_line";
 
 string read_last_line() {
     ifstream infile(filename);
