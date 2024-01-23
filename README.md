@@ -11,7 +11,12 @@
   what():  locale::facet::_S_create_c_locale name not valid
 Aborted (core dumped)
 `
+
  *A:可能是缺库*
+
+ > Q:我发现了这个程序容易漏消息
+
+*A:这个还没有解决*
 ## 搭建：
 - 在你所要搭建的Linux上的用户主目录（例：/home/user）将本仓库的main.cpp复制到那里，之后运行 `g++ ./main.cpp -o chat`
 - > 注：你可能需要自行建立 `chat_history.txt` 文件
