@@ -14,6 +14,7 @@ Aborted (core dumped)
  *A:可能是缺库*
 ## 搭建：
 - 在你所要搭建的Linux上的用户主目录（例：/home/user）将本仓库的main.cpp复制到那里，之后运行 `g++ ./main.cpp -o chat`
+- > 注：你可能需要自行建立 `chat_history.txt` 文件
 - 启用ssh服务
 - 将服务器通过内网穿透软件公开的公网
 - 让别人通过ssh进入后输入 `./chat` 这样就能聊天了
