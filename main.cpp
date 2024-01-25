@@ -7,6 +7,9 @@
 #include <sys/wait.h>
 #include <locale>
 #include <ctime>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <cstring>
 
 using namespace std;
 
@@ -14,55 +17,98 @@ string username = "-";
 string filename = "chat_history.txt";
 string empty_note = "There is no message now, send a message";
 string tmp_last_line = "this is the value of tmp_last_line";
+// 全局变量，用于保存映射的内存地址和大小
+char* file_data = nullptr;
+off_t file_size = 0;
+
+// 中断信号处理函数
+void handle_interrupt(int signal) {
+    // 解除内存映射
+    if (file_data != nullptr && file_size > 0) {
+        munmap(file_data, file_size);
+    }
+
+    // 退出程序
+    exit(0);
+}
 
 string read_last_line() {
-    ifstream infile(filename);
-    string line;
-    vector<string> lines;
-    while (getline(infile, line)) {
-        lines.push_back(line);
+    static string last_line; // 使用静态变量来缓存最后一行消息
+    int fd = open(filename.c_str(), O_RDONLY);
+    if (fd == -1) {
+        cerr << "无法打开文件。" << endl;
+        exit(1);
     }
-    if (!lines.empty()) {
-        return lines.back();
+
+    off_t file_size = lseek(fd, 0, SEEK_END);
+    if (file_size == -1) {
+        cerr << "无法获取文件大小。" << endl;
+        exit(1);
+    }
+
+    if (file_size == 0) {
+        last_line = empty_note;
     } else {
-        return empty_note;
+        if (file_size > 1024) {
+            file_size = 1024; // 限制读取的文件大小为最后1KB
+        }
+        char* file_data = static_cast<char*>(mmap(nullptr, file_size, PROT_READ, MAP_PRIVATE, fd, 0));
+        if (file_data == MAP_FAILED) {
+            cerr << "无法映射文件到内存。" << endl;
+            exit(1);
+        }
+
+        char* newline_pos = strrchr(file_data, '\n');
+        if (newline_pos != nullptr) {
+            last_line = newline_pos + 1;
+        } else {
+            last_line = empty_note;
+        }
+
+        munmap(file_data, file_size);
     }
+
+    close(fd);
+
+    return last_line;
 }
 
 void write_to_last_line(const string& line) {
-    /*ofstream outfile(filename, ios::app);
-    outfile.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
-    outfile << line << '\n';
-    outfile.close();*/
-    time_t now = time(nullptr);
-    tm* t = localtime(&now);
-    ifstream infile(filename);
-    string tmp_filename = filename + ".tmp";
-    string tmp_line;
-    ofstream outfile(tmp_filename);
-    bool first_line = true;
+    int fd = open(filename.c_str(), O_RDWR);
+    if (fd == -1) {
+        cerr << "无法打开文件。" << endl;
+        exit(1);
+    }
 
-    // Read all lines from the file
-    while (getline(infile, tmp_line)) {
-        // Write all lines except the last one to the temporary file
-        if (!first_line) {
-            outfile << tmp_line << '\n';
+    off_t file_size = lseek(fd, 0, SEEK_END);
+    if (file_size == -1) {
+        cerr << "无法获取文件大小。" << endl;
+        exit(1);
+    }
+
+    if (file_size == 0) {
+        string greeting = "-" + username + "-" + " joined the room";
+        write(fd, greeting.c_str(), greeting.size());
+    } else {
+        if (file_size > 1024) {
+            file_size = 1024; // 限制读取的文件大小为最后1KB
         }
-        first_line = false;
+        char* file_data = static_cast<char*>(mmap(nullptr, file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+        if (file_data == MAP_FAILED) {
+            cerr << "无法映射文件到内存。" << endl;
+            exit(1);
+        }
+
+        char* newline_pos = strrchr(file_data, '\n');
+        if (newline_pos != nullptr) {
+            string new_last_line = line;
+            strcpy(newline_pos + 1, new_last_line.c_str());
+        }
+
+        munmap(file_data, file_size);
     }
 
-    // Write the new last line to the temporary file
-
-    outfile.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
-    outfile <<"["<<t->tm_year + 1900 << "/" << t->tm_mon + 1<< "/" << t->tm_mday << " "<<t->tm_hour << ":" << t->tm_min << ":" << t->tm_sec <<"]"<< line << '\n';
-    // Close the input and output files
-    infile.close();
-    outfile.close();
-
-    // Rename the temporary file to the original filename
-    if (rename(tmp_filename.c_str(), filename.c_str()) != 0) {
-        throw runtime_error("Failed to rename temporary file.");
-    }
+    close(fd);
 }
 
 void receiveMessages() {
@@ -80,35 +126,33 @@ void sendMessages() {
     cin.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
     while (true) {
         string message;
-        //cout << "请输入您的消息：";
-        //cin.ignore(); // 忽略之前的换行符
         getline(cin, message);
 
         // 将消息添加到聊天记录中
-        write_to_last_line(username + ": " + message);
+        write_to_last_line("-"+username+"-"+ ": " + message);
     }
 }
 
 int main() {
-    setlocale(LC_ALL, "UTF-8"); // 设置终端的字符编码为当前环境的默认编码
-    cout.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
-    cout << "您还没有用户名，请输入一个用户名：" << endl;
-    cin >> username;
-    string greeting = "-" + username + "-" + " joined the room";
-    write_to_last_line(greeting);
-    username = "-" + username + "-";
-    pid_t pid = fork();
+    setlocale(LC_ALL, "UTF-8"); // 设置终端的字符编码为UTF-8
 
+    // 注册中断信号处理函数
+    signal(SIGINT, handle_interrupt);
+
+    cout << "请输入用户名：";
+    cin >> username;
+
+    // 创建子进程来接收消息并显示
+    pid_t pid = fork();
     if (pid == -1) {
         cerr << "无法创建子进程。" << endl;
-        return 1;
+        exit(1);
     } else if (pid == 0) {
-        // 子进程负责接收消息并显示
+        // 子进程
         receiveMessages();
     } else {
-        // 父进程负责发送消息
+        // 父进程
         sendMessages();
-        wait(NULL); // 等待子进程结束
     }
 
     return 0;
