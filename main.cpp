@@ -84,12 +84,7 @@ void write_to_last_line(const string& line) {
     if (file_size == -1) {
         cerr << "无法获取文件大小。" << endl;
         exit(1);
-    }
-
-    if (file_size == 0) {
-        string greeting = "-" + username + "-" + " joined the room";
-        write(fd, greeting.c_str(), greeting.size());
-    } else {
+    }else {
         if (file_size > 1024) {
             file_size = 1024; // 限制读取的文件大小为最后1KB
         }
@@ -138,10 +133,10 @@ int main() {
 
     // 注册中断信号处理函数
     signal(SIGINT, handle_interrupt);
-
+    write_to_last_line("    welcome");
     cout << "请输入用户名：";
     cin >> username;
-
+    write_to_last_line("-"+username+"-joined the room");
     // 创建子进程来接收消息并显示
     pid_t pid = fork();
     if (pid == -1) {
