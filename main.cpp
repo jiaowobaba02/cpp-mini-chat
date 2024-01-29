@@ -113,7 +113,7 @@ void receiveMessages() {
             cout << last_line << endl;
         }
         tmp_last_line = last_line;
-        sleep(0.5); // 暂停0.5秒钟，避免过于频繁地读取聊天记录
+        sleep(0.1); // 注：实际这个量不怎么影响性能
     }
 }
 
