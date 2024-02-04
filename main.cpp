@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <locale>
 #include <ctime>
+#include <sys/ioctl.h>
 
 using namespace std;
 
@@ -17,6 +18,15 @@ string tmp_last_line = "this is the value of tmp_last_line";
 static string last_line;
 string message;
 int color;
+struct winsize w;
+int lines;
+
+void scrollOutput(int lines) {
+    struct winsize size;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &size); // 获取终端窗口的大小
+
+    std::cout << "\x1b[" << size.ws_row - lines << "H"; // 将光标向上移动指定行数
+}
 
 string read_last_line() {
     ifstream infile(filename);
@@ -72,10 +82,12 @@ void receiveMessages() {
     while (true) {
         string last_line = read_last_line();
         if (last_line != tmp_last_line) {
+            //TODO!让消息在倒数第二行滚动，而不是倒数第一行
+            scrollOutput(1);
             cout <<"\033[1A\033[K"<< last_line<<"\033[999B" << endl;
         }
         tmp_last_line = last_line;
-        sleep(0.1); // 暂停0.1秒钟，避免过于频繁地读取聊天记录
+        sleep(0.01); // 暂停0.01秒钟，避免过于频繁地读取聊天记录
     }
 }
 
@@ -96,6 +108,7 @@ void sendMessages() {
 int main() {
     setlocale(LC_ALL, "UTF-8"); // 设置终端的字符编码为当前环境的默认编码
     cout.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
+    
     cout << "您还没有用户名，请输入一个用户名：" << endl;
     cin >> username;
     unsigned long long hash = 5381 ;
@@ -103,7 +116,7 @@ int main() {
     	hash = ((hash << 5)+hash)+c;
     }
     std::srand(hash);
-    color=rand()%7+31;
+    color=rand()%6+31;
     write_to_last_line("\033["+to_string(color)+"m"+"-"+username+"-"+"\033[0m joined the room");
     pid_t pid = fork();
 
