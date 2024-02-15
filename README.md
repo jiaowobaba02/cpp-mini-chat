@@ -36,3 +36,6 @@ Aborted (core dumped)
 - [x] 支持终端颜色
 
 > 会持续更新
+
+#### 特别鸣谢：
+Codegeex这个AI提供的代码优化方法
