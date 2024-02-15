@@ -8,6 +8,10 @@
 #include <locale>
 #include <ctime>
 #include <sys/ioctl.h>
+#include <thread>
+#include <condition_variable>
+#include <mutex>
+#include <atomic>
 
 using namespace std;
 
@@ -20,6 +24,8 @@ string message;
 int color;
 struct winsize w;
 int lines;
+string line;
+vector<string> lines_read;
 
 void scrollOutput(int lines) {
     struct winsize size;
@@ -31,17 +37,17 @@ void scrollOutput(int lines) {
 string read_last_line() {
     ifstream infile(filename);
     string line;
-    vector<string> lines;
     while (getline(infile, line)) {
-        lines.push_back(line);
+        lines_read.push_back(line);
     }
     infile.close();
-    if (!lines.empty()) {
-        return lines.back();
-        lines.clear();
+    if (!lines_read.empty()) {
+        return lines_read.back();
+        lines_read.clear();
     } else {
         return empty_note;
     }
+    return 0;
 }
 
 void write_to_last_line(const string& line) {
@@ -86,10 +92,10 @@ void receiveMessages() {
         if (last_line != tmp_last_line) {
             //TODO!让消息在倒数第二行滚动，而不是倒数第一行
             scrollOutput(1);
-            cout <<"\033[1A\033[K"<< last_line<<"\033[999B" << endl;
+            std::cout << "\033[1A\033[K" << last_line << "\033[999B" << std::endl;
         }
         tmp_last_line = last_line;
-        sleep(0.01); // 暂停0.01秒钟，避免过于频繁地读取聊天记录
+        this_thread::sleep_for(chrono::milliseconds(100)); // 暂停0.01秒钟，避免过于频繁地读取聊天记录
     }
 }
 
@@ -120,9 +126,9 @@ int main() {
     std::srand(hash);
     color=rand()%6+31;
     write_to_last_line("\033["+to_string(color)+"m"+"-"+username+"-"+"\033[0m joined the room");
-    pid_t pid = fork();
+    /*pid_t pid = fork();
 
-    if (pid == -1) {
+    if (pid == -1) { //已弃用
         cerr << "无法创建子进程。" << endl;
         return 1;
     } else if (pid == 0) {
@@ -132,7 +138,15 @@ int main() {
         // 父进程负责发送消息
         sendMessages();
         wait(NULL); // 等待子进程结束
-    }
+    }*/
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::atomic<bool> finished = false;
+    thread t(receiveMessages);
+    thread s(sendMessages);
+    
+    t.join();
+    s.join();
 
     return 0;
 }
