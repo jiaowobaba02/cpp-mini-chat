@@ -91,11 +91,11 @@ void receiveMessages() {
         string last_line = read_last_line();
         if (last_line != tmp_last_line) {
             //TODO!让消息在倒数第二行滚动，而不是倒数第一行
-            scrollOutput(1);
+            scrollOutput(0);
             std::cout << "\033[1A\033[K" << last_line << "\033[999B" << std::endl;
         }
         tmp_last_line = last_line;
-        this_thread::sleep_for(chrono::milliseconds(100)); // 暂停0.01秒钟，避免过于频繁地读取聊天记录
+        this_thread::sleep_for(chrono::milliseconds(10)); // 暂停0.001秒钟，避免过于“频繁”地读取聊天记录
     }
 }
 
