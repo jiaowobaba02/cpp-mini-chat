@@ -35,8 +35,10 @@ string read_last_line() {
     while (getline(infile, line)) {
         lines.push_back(line);
     }
+    infile.close();
     if (!lines.empty()) {
         return lines.back();
+        lines.clear();
     } else {
         return empty_note;
     }
