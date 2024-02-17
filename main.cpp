@@ -3,8 +3,8 @@
 #include <string>
 #include <vector>
 #include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
+//#include <sys/types.h> 经过测试不需要该库
+//#include <sys/wait.h> 经过测试不需要该库
 #include <locale>
 #include <ctime>
 #include <sys/ioctl.h>
@@ -26,6 +26,10 @@ struct winsize w;
 int lines;
 string line;
 vector<string> lines_read;
+
+void instructon(){
+    
+}
 
 void scrollOutput(int lines) {
     struct winsize size;
@@ -119,7 +123,7 @@ int main() {
     
     cout << "您还没有用户名，请输入一个用户名：" << endl;
     cin >> username;
-    unsigned long long hash = 5381 ;
+    unsigned long long hash = 5356 ;
     for (char c : username){
     	hash = ((hash << 5)+hash)+c;
     }
