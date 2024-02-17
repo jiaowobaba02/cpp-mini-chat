@@ -1,7 +1,7 @@
 # cpp-mini-chat
 一个用C++和ssh实现的简单的聊天软件
 ## 需要环境：
-- Linux
+- Linux/Windows
 - g++编译器
 - openssh-server
 - 内网穿透软件（如:ngrok）
