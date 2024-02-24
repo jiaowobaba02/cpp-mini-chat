@@ -66,25 +66,20 @@ void write_to_last_line(const string& line) {
     string tmp_line;
     ofstream outfile(tmp_filename);
     bool first_line = true;
-
-    // Read all lines from the file
+    //先写入tmp文件->重命名
     while (getline(infile, tmp_line)) {
-        // Write all lines except the last one to the temporary file
         if (!first_line) {
             outfile << tmp_line << '\n';
         }
         first_line = false;
     }
 
-    // Write the new last line to the temporary file
 
     outfile.imbue(locale("zh_CN.UTF-8")); // 设置流的字符编码为 UTF-8
     outfile <<"["<<t->tm_year + 1900 << "/" << t->tm_mon + 1<< "/" << t->tm_mday << " "<<t->tm_hour << ":" << t->tm_min << ":" << t->tm_sec <<"]"<< line << '\n';
-    // Close the input and output files
     infile.close();
     outfile.close();
 
-    // Rename the temporary file to the original filename
     if (rename(tmp_filename.c_str(), filename.c_str()) != 0) {
         throw runtime_error("Failed to rename temporary file.");
     }
@@ -97,6 +92,8 @@ void receiveMessages() {
             //TODO!让消息在倒数第二行滚动，而不是倒数第一行
             scrollOutput(0);
             std::cout << "\033[1A\033[K" << last_line << "\033[999B" << std::endl;
+            cout<<"\033["<<to_string(color)<<"m"<<username<<":\033[0m";
+            cout << "\033[" << 500<< ";" << username.length()+2 << "H";
         }
         tmp_last_line = last_line;
         this_thread::sleep_for(chrono::milliseconds(10)); // 暂停0.001秒钟，避免过于“频繁”地读取聊天记录
@@ -108,8 +105,9 @@ void sendMessages() {
     while (true) {
         //cout << "请输入您的消息：";
         //cin.ignore(); // 忽略之前的换行符
-        cout<<"\033["<<to_string(color)<<"m"<<username<<":\033[0m";
-        cout << "\033[" << 500<< ";" << username.length()+2 << "H";
+        
+        
+        
         getline(cin, message);
 
         // 将消息添加到聊天记录中
@@ -130,6 +128,7 @@ int main() {
     std::srand(hash);
     color=rand()%6+31;
     write_to_last_line("\033["+to_string(color)+"m"+"-"+username+"-"+"\033[0m joined the room");
+    this_thread::sleep_for(chrono::milliseconds(100));
     /*pid_t pid = fork();
 
     if (pid == -1) { //已弃用
